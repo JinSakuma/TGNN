@@ -59,13 +59,12 @@ class TGNN(nn.Module):
         u_pred = np.asarray([])
         y = np.asarray([])
 
-        # print(xA.size())
-        # print(xB.size())
-        # print(img.size())
-        # exit()
         if self.mode in [0, 3, 4, 6]:
             hA, hB = self.ctr.calc_voice(xA, xB)
-            up = self.swt(xA, xB)
+
+            # SWT 更新するときは使用する予定
+            # SWT 更新しないならデータファイルから読み込んできたものを使用
+            #up = self.swt(xA, xB)
 
         if self.mode in [1, 3, 5, 6]:
             hImg = self.ctr.calc_img(img)
