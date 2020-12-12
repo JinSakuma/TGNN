@@ -166,53 +166,41 @@ def get_phoneme_id(phoneme_list):
     return out
 
 
-def make_pack(X, idxs):
+def make_pack(pack_list, X, idxs, name):
     pre = 0
-    pack = []
-    for i in idxs:
-        pack.append(X[pre:i])
-        pre = i
+    for i, idx in enumerate(idxs):
+        pack_list[i][name] = X[pre:idx]
+        pre = idx
 
-    pack.append(X[pre:])
-    return pack
+    pack_list[i+1][name] = X[pre:]
+    return pack_list
 
 
 class MyDataLoader(data.Dataset):
-    def __init__(self, input_dict, target_dict, shuffle=True, batch_size=1):
+    def __init__(self, pack, shuffle=True, batch_size=1):
         super().__init__()
 
-        self.input_dict = input_dict
-        self.target_dict = target_dict
+        self.pack = pack
         self.batch_size = batch_size
         self.order = []
         if shuffle:
-            self.order = np.random.permutation(len(self.target_dict['y']))
+            self.order = np.random.permutation(len(self.pack))
         else:
-            self.order = np.arange(len(self.target_dict['y']))
+            self.order = np.arange(len(self.pack))
         self.curr_idx = -1
 
     def __len__(self):
-        return int(len(self.target_dict['y'])/self.batch_size)
+        return int(len(self.pack)/self.batch_size)
 
     def __getitem__(self, idx):
 
         jdx = self.order[idx*self.batch_size:(idx+1)*self.batch_size]
 
-        input_batch = {'voiceA': [], 'voiceB': [], 'img': [], 'phonemeA': [], 'phonemeB': [], 'U_pred': []}
-        target_batch = {'U': [], 'y': [], 'action': []}
+        batch = []
         for i in range(self.batch_size):
-            input_batch['voiceA'].append(self.input_dict['voiceA'][jdx[i]])
-            input_batch['voiceB'].append(self.input_dict['voiceB'][jdx[i]])
-            input_batch['img'].append(self.input_dict['img'][jdx[i]])
-            input_batch['phonemeA'].append(self.input_dict['phonemeA'][jdx[i]])
-            input_batch['phonemeB'].append(self.input_dict['phonemeB'][jdx[i]])
-            input_batch['U_pred'].append(self.input_dict['U_pred'][jdx[i]])
+            batch.append(self.pack[jdx[i]])
 
-            target_batch['U'].append(self.target_dict['U'][jdx[i]])
-            target_batch['y'].append(self.target_dict['y'][jdx[i]])
-            target_batch['action'].append(self.target_dict['action'][jdx[i]])
-
-        return input_batch, target_batch
+        return batch
 
     def next(self):
         self.curr_idx += 1
@@ -221,4 +209,4 @@ class MyDataLoader(data.Dataset):
         return self.__getitem__(self.curr_idx)
 
     def on_epoch_end(self):
-        self.order = np.random.permutation(len(self.target_dict['y']))
+        self.order = np.random.permutation(len(self.pack))
