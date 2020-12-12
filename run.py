@@ -21,6 +21,9 @@ def main():
     parser.add_argument('-e', '--epoch', type=int, default=30)
     parser.add_argument('-r', '--resume', type=str, default=True)
     parser.add_argument('--hang', type=str, default=False)
+    parser.add_argument('--gpuid', type=int, default=2)
+    parser.add_argument('--weight', type=str, 
+                        default='/mnt/aoni04/katayama/share/SPEC/epoch_20_acc0.887_loss0.266_ut_train.pth')
 
     args = parser.parse_args()
 
@@ -34,6 +37,8 @@ def main():
     seed = args.seed
     np.random.seed(seed)
     torch.manual_seed(seed)
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpuid)
 
     if args.lang == 'ctc':
         print('CTC')
@@ -53,9 +58,9 @@ def main():
     dataloaders_dict = get_dataloader(args.input, DENSE_FLAG, ELAN_FLAG, TARGET_TYPE)
 
     if args.lang == 'ctc':
-        net = TGNN(mode=args.mode, input_size=128, input_img_size=65, input_p_size=64, hidden_size=64)
+        net = TGNN(mode=args.mode, input_size=128, input_img_size=65, input_p_size=64, hidden_size=64, weight_path=args.weight)
     else:
-        net = TGNN(mode=args.mode, input_size=128, input_img_size=65, input_p_size=45, hidden_size=64)
+        net = TGNN(mode=args.mode, input_size=128, input_img_size=65, input_p_size=45, hidden_size=64, weight_path=args.weight)
 
     if args.mode == 0:
         print("音響")
@@ -77,12 +82,12 @@ def main():
     optimizer = optim.Adam(net.parameters(), lr=0.001)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=15, gamma=0.5)
     for name, param in net.named_parameters():
-        if 'fc' in name or 'lstm' in name:
+        if 'swt' in name:
+            param.requires_grad = False
+            print("勾配計算なし。学習しない：", name)            
+        else:
             param.requires_grad = True
             print("勾配計算あり。学習する：", name)
-        else:
-            param.requires_grad = False
-            print("勾配計算なし。学習しない：", name)
 
     print('train data is ', len(dataloaders_dict['train']))
     print('test data is ', len(dataloaders_dict['val']))
