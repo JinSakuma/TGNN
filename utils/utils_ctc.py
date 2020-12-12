@@ -49,8 +49,7 @@ def setup(PATH, file_id, dense_flag=False, elan_flag=False):
 
 
 def preprocess(feat, target_type, phase='train'):
-    input_dict = {'voiceA': [], 'voiceB': [], 'img': [], 'phonemeA': [], 'phonemeB': [], 'U_pred': []}
-    target_dict = {'U': [], 'y': [], 'action': []}
+    pack = []
 
     OC, YC = 0, 0
     threshold = 0.8
@@ -76,6 +75,7 @@ def preprocess(feat, target_type, phase='train'):
         action = feat['feature'][i]['action'].map(lambda x: 1 if x == 'Passive' else 0)
         action_c = feat['feature'][i]['action'].map(lambda x: 1 if x in ['Active-Continue','Passive-Continue'] else 0).values
         y[0] = 0.  # start は予測不可
+        u[0] = 0
         action[0] = 0
         y = np.asarray(y)
         action = np.asarray(action)
@@ -139,21 +139,23 @@ def preprocess(feat, target_type, phase='train'):
         # パッケージングに必要なインデックス(非発話区間の終了箇所)
         s = np.asarray([0]+list(u[:-1]-u[1:]))
         idxs = np.where(s == 1)[0]
-        input_dict['voiceA'].append(make_pack(feat['voiceA'][i].values, idxs))
-        input_dict['voiceB'].append(make_pack(feat['voiceB'][i].values, idxs))
-        input_dict['img'].append(make_pack(img, idxs))
-        input_dict['phonemeA'].append(make_pack(feat['phonemeA'][i], idxs))
-        input_dict['phonemeB'].append(make_pack(feat['phonemeB'][i], idxs))
-        input_dict['U_pred'].append(make_pack(u_pred, idxs))
+        batch_list = [{'voiceA': [], 'voiceB': [], 'img': [], 'phonemeA': [], 'phonemeB': [], 'u_pred': [], 'u': [], 'y': [], 'action': []} for _ in range(len(idxs)+1)]
+        batch_list = make_pack(batch_list, feat['voiceA'][i].values, idxs, 'voiceA')
+        batch_list = make_pack(batch_list, feat['voiceB'][i].values, idxs, 'voiceB')
+        batch_list = make_pack(batch_list, img, idxs, 'img')
+        batch_list = make_pack(batch_list, feat['phonemeA'][i], idxs, 'phonemeA')
+        batch_list = make_pack(batch_list, feat['phonemeA'][i], idxs, 'phonemeB')
+        batch_list = make_pack(batch_list, u_pred, idxs, 'u_pred')
+        batch_list = make_pack(batch_list, u, idxs, 'u')
+        batch_list = make_pack(batch_list, y, idxs, 'y')
+        batch_list = make_pack(batch_list, action, idxs, 'action')
 
-        target_dict['U'].append(make_pack(u, idxs))
-        target_dict['y'].append(make_pack(y, idxs))
-        target_dict['action'].append(make_pack(action, idxs))
+        pack.append(batch_list)
 
     print('turn taking timing: {}'.format(YC))
     print('overlap: {}'.format(OC))
 
-    return input_dict, target_dict
+    return pack
 
 
 def get_dataloader(path, dense_flag, elan_flag, target_type, batch_size=1):
@@ -162,11 +164,11 @@ def get_dataloader(path, dense_flag, elan_flag, target_type, batch_size=1):
     feat_train = setup(path, file_id[:train_num], dense_flag=dense_flag, elan_flag=elan_flag)
     feat_val = setup(path, file_id[train_num:], dense_flag=dense_flag, elan_flag=elan_flag)
 
-    input_dict_train, target_dict_train = preprocess(feat_train, target_type=target_type, phase='train')
-    input_dict_val, target_dict_val = preprocess(feat_val, target_type=target_type, phase='val')
+    pack_train = preprocess(feat_train, target_type=target_type, phase='train')
+    pack_val = preprocess(feat_val, target_type=target_type, phase='val')
 
-    train_loader = MyDataLoader(input_dict_train, target_dict_train, shuffle=True, batch_size=batch_size)
-    val_loader = MyDataLoader(input_dict_val, target_dict_val, shuffle=False, batch_size=batch_size)
+    train_loader = MyDataLoader(pack_train, shuffle=True, batch_size=batch_size)
+    val_loader = MyDataLoader(pack_val, shuffle=False, batch_size=batch_size)
 
     dataloaders_dict = {"train": train_loader, "val": val_loader}
     return dataloaders_dict

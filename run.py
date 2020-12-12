@@ -10,23 +10,22 @@ from utils.trainer import trainer
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input', type=str, default='/mnt/aoni04/jsakuma/data/sota/')
-    parser.add_argument('-l', '--lang', type=str, default='julius', help='ctc or julius')
+    parser.add_argument('-l', '--lang', type=str, default='ctc', help='ctc or julius')
 #     parser.add_argument('-l', '--lang', type=str, default='julius', help='ctc or julius')
-    parser.add_argument('-m', '--mode', type=int, default=2,
+    parser.add_argument('-m', '--mode', type=int, default=6,
                         help='0 _ VAD, 1 _ 画像, 2 _ 言語, 3 _ VAD+画像, 4 _ VAD+言語, 5 _ 画像+言語, 6 _ VAD+画像+言語')
     parser.add_argument('-s', '--seed', type=int, default=0)
-    parser.add_argument('-u', '--umode', type=str, default='C', help='C(continuous) or D(discrete)')
     parser.add_argument('--target_type', action='store_true',
                         help='if True, target shape is 3(A,B,unknown), False is 1(A/B)')
-    parser.add_argument('-o', '--out', type=str, default='./logs/julius/add_annotation/p0.4/seed0')
+    parser.add_argument('-o', '--out', type=str, default='./logs/ctc/p0.4/seed0')
     parser.add_argument('-e', '--epoch', type=int, default=30)
     parser.add_argument('-r', '--resume', type=str, default=True)
     parser.add_argument('--hang', type=str, default=False)
 
     args = parser.parse_args()
-    
+
     assert args.lang in args.out, 'args.langと保存先pathを確認!'
-    
+
     os.makedirs(args.out, exist_ok=True)
     DENSE_FLAG = False
     ELAN_FLAG = True
@@ -97,7 +96,7 @@ def main():
         num_epochs=args.epoch,
         output=out,
         resume=args.resume,
-        umode=args.umode)
+        )
 
 
 if __name__ == '__main__':
