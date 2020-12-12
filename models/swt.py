@@ -31,7 +31,7 @@ class UnspeechModel(nn.Module):
             batch_first=True,
         )
         self.fc2 = nn.Linear(hidden_size, 2)      
-        self.softmax = nn.Softmax()
+        self.softmax = nn.Softmax(dim=-1)
 
         self.hidden = None
         self.hiddenA = None

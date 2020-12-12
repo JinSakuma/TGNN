@@ -4,7 +4,7 @@ import os
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from utils.eval import quantitative_evaluation
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 
 def train(net, mode, dataloaders_dict,
@@ -70,7 +70,7 @@ def val(net, mode, dataloaders_dict,
                 output_dict = net(batch[0][i], out[-1], a[-1], phase='val')
 
                 a_pred = np.append(a_pred, output_dict['alpha'])
-                u_true = np.append(u_true, batch[0][i]['U'])
+                u_true = np.append(u_true, batch[0][i]['u'])
                 u_pred = np.append(u_pred, output_dict['u_pred'])
                 y_true = np.append(y_true, batch[0][i]['y'])
                 y_pred = np.append(y_pred, output_dict['y'])
