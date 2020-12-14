@@ -28,7 +28,7 @@ def train(net, mode, dataloaders_dict,
             output_dict = net(batch[0][i], out[-1], a[-1])
 
             loss = output_dict['loss']
-            if loss != 0:
+            if loss != 0 and loss != -1:
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -56,7 +56,7 @@ def val(net, mode, dataloaders_dict,
     train_cnt = 0
     threshold = 0.8
     a_pred = np.array([])
-    u_true, u_pred = np.array([]), np.array([])
+    u_true, u_pred, u_pred_hat = np.array([]), np.array([]), np.array([])
     y_true, y_pred = np.array([]), np.array([])
 
     with torch.no_grad():
@@ -72,11 +72,12 @@ def val(net, mode, dataloaders_dict,
                 a_pred = np.append(a_pred, output_dict['alpha'])
                 u_true = np.append(u_true, batch[0][i]['u'])
                 u_pred = np.append(u_pred, output_dict['u_pred'])
+                u_pred_hat = np.append(u_pred_hat, output_dict['u_pred_hat'])
                 y_true = np.append(y_true, batch[0][i]['y'])
                 y_pred = np.append(y_pred, output_dict['y'])
 
                 loss = output_dict['loss']
-                if loss != 0:
+                if loss != 0 and loss != -1:
                     net.back_trancut()
                     loss = loss.item()
 
@@ -87,17 +88,23 @@ def val(net, mode, dataloaders_dict,
         epoch_loss = epoch_loss / train_cnt
         if resume:
             torch.save(net.state_dict(), os.path.join(output, 'epoch_{}_loss_{:.3f}.pth'.format(epoch+1, epoch_loss)))
-            plt.figure(figsize=(20, 4))
+            fig = plt.figure(figsize=(20, 8))
             plt.rcParams["font.size"] = 18
-            plt.plot([threshold]*300, color='black', linestyle='dashed')
-            plt.plot(y_pred[:300], label='predict', linewidth=3.0)
-            plt.plot(u_true[:300], label='u_true', color='g', linewidth=3.0)
-            plt.plot(u_pred[:300], label='u_t', color='g', linewidth=2.0)
-            plt.fill_between(range(300), u_pred[:300], color='g', alpha=0.3)
-            plt.plot(a_pred[:300], label='a_t', color='r', linewidth=3.0)
-            plt.fill_between(range(300), a_pred[:300], color='r', alpha=0.3)
-            plt.plot(y_true[:300], label='true label', linewidth=4.0, color='m')
-            plt.legend()
+            ax1 = fig.add_subplot(2, 1, 1)
+            ax2 = fig.add_subplot(2, 1, 2)
+
+            ax1.plot([threshold]*300, color='black', linestyle='dashed')
+            ax1.plot(u_true[:300], label='u_true', color='g', linewidth=3.0)
+            ax1.plot(u_pred[:300], label='u_pred', color='g', linewidth=2.0)
+            ax1.plot(u_pred_hat[:300], label='u_pred_hat', color='m', linewidth=2.0)
+            ax1.legend()
+            # plt.fill_between(range(300), u_pred[:300], color='g', alpha=0.3)
+            ax2.plot([threshold]*300, color='black', linestyle='dashed')
+            ax2.plot(y_pred[:300], label='predict', linewidth=3.0)
+            ax2.plot(a_pred[:300], label='a_t', color='r', linewidth=3.0)
+            ax2.fill_between(range(300), a_pred[:300], color='r', alpha=0.3)
+            ax2.plot(y_true[:300], label='true label', linewidth=4.0, color='b')
+            ax2.legend()
             plt.savefig(os.path.join(output, 'result_{}_loss_{:.3f}.png'.format(epoch+1, epoch_loss)))
 
             precision, recall, f1, Distance, LogDistance = quantitative_evaluation(epoch+1, y_true, y_pred, u_true, threshold=threshold, resume=True, output=output)

@@ -169,8 +169,8 @@ def get_phoneme_id(phoneme_list):
 def make_pack(pack_list, X, idxs, name):
     pre = 0
     for i, idx in enumerate(idxs):
-        pack_list[i][name] = X[pre:idx]
-        pre = idx
+        pack_list[i][name] = X[pre:idx+1]
+        pre = idx+1
 
     pack_list[i+1][name] = X[pre:]
     return pack_list

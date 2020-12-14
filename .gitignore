@@ -1,3 +1,5 @@
 notebooks/
 logs/
 *.pyc
+*.log
+*.out
