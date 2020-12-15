@@ -52,7 +52,7 @@ class TGNN(nn.Module):
 
         self.hidden_size = hidden_size
 
-    def get_threshold(self, max_frame):
+    def get_threshold(self, max_frame, thres=0.7):
         """
         thres2を設定する関数
         uが常に1.0の時,max_frameでちょうどthres1になるalphaを求め,逆算する
@@ -69,7 +69,7 @@ class TGNN(nn.Module):
                 y = a*up+(1-a)*y_pre
                 y_pre = y
 
-            score = abs(y-self.thres1)
+            score = abs(y-thres)
             if min_score > score:
                 min_score = score
                 alpha = a

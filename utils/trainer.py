@@ -4,7 +4,6 @@ import os
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from utils.eval import quantitative_evaluation
-# os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 
 def train(net, mode, dataloaders_dict,
