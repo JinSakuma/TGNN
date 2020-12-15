@@ -143,3 +143,63 @@ class CTR(nn.Module):
     def reset_phoneme(self):
         self.prev_hpa = torch.zeros(1, 64).to(self.device)
         self.prev_hpb = torch.zeros(1, 64).to(self.device)
+
+
+class CTR_Julius(CTR):
+    """
+    CTR
+    応答速度 alpha(t) を推定
+    """
+    def __init__(self,
+                 mode=0,
+                 input_size=128,
+                 input_img_size=65,
+                 input_p_size=45,
+                 hidden_size=64
+                 ):
+        super().__init__(mode, input_size, input_img_size, input_p_size, hidden_size)
+
+        self.embedding_size = 30
+
+        # 言語LSTM
+        if self.mode in [2, 4, 5, 6]:
+            # 埋め込み層
+            self.embedding = nn.Embedding(self.input_p_size, self.embedding_size)
+            self.lstm_lng = torch.nn.LSTM(
+                input_size=self.embedding_size,
+                hidden_size=hidden_size,
+                batch_first=True,
+            )
+
+    def calc_lang(self, PA, PB):
+        hpA_list = []
+        hpB_list = []
+        for i in range(min(len(PA), len(PB))):
+            pa = PA[i]
+            pb = PB[i]
+            if pa == self.PAD:
+                hpA = self.prev_hpa
+            else:
+                pA = torch.tensor(pa).to(self.device, dtype=torch.long)
+                emb_pA = self.embedding(pA)
+                emb_pA = emb_pA.unsqueeze(0)
+                hpA, self.hiddenPA = self.lstm_lng(emb_pA, self.hiddenPA)
+                hpA = hpA[:, -1, :]
+            hpA_list.append(hpA)
+
+            if pb == self.PAD:
+                hpB = self.prev_hpb
+            else:
+                pB = torch.tensor(pb).to(self.device, dtype=torch.long)
+                emb_pB = self.embedding(pB)
+                emb_pB = emb_pB.unsqueeze(0)
+                hpB, self.hiddenPA = self.lstm_lng(emb_pB, self.hiddenPB)
+                hpB = hpB[:, -1, :]
+            hpB_list.append(hpB)
+
+            self.prev_hpa = hpA
+            self.prev_hpb = hpB
+
+        hpa = torch.cat(hpA_list)
+        hpb = torch.cat(hpB_list)
+        return hpa.unsqueeze(0), hpb.unsqueeze(0)
