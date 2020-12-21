@@ -203,3 +203,90 @@ class CTR_Julius(CTR):
         hpa = torch.cat(hpA_list)
         hpb = torch.cat(hpB_list)
         return hpa.unsqueeze(0), hpb.unsqueeze(0)
+
+
+class CTR_Multitask(CTR):
+    """
+    CTR
+    応答速度 alpha(t) を推定
+    """
+    def __init__(self,
+                 mode=0,
+                 input_size=128,
+                 input_img_size=65,
+                 input_p_size=45,
+                 hidden_size=64,
+                 num_cls=2):
+        super().__init__(mode, input_size, input_img_size, input_p_size, hidden_size)
+
+        self.num_cls = num_cls
+
+        if self.mode == 0 or self.mode == 2:
+            self.fc_act_1 = nn.Linear(hidden_size*2, hidden_size)
+            self.fc_act_2 = nn.Linear(hidden_size, self.num_cls)
+        elif self.mode == 1:
+            # self.fc_act_1 = nn.Linear(hidden_size*3, hidden_size)
+            self.fc_act_2 = nn.Linear(hidden_size, self.num_cls)
+        elif self.mode == 3 or self.mode == 5:
+            self.fc_act_1 = nn.Linear(hidden_size*3, hidden_size)
+            self.fc_act_2 = nn.Linear(hidden_size, self.num_cls)
+        elif self.mode == 4:
+            self.fc_act_1 = nn.Linear(hidden_size*4, hidden_size)
+            self.fc_act_2 = nn.Linear(hidden_size, self.num_cls)
+        else:
+            self.fc_act_1 = nn.Linear(hidden_size*5, hidden_size)
+            self.fc_act_2 = nn.Linear(hidden_size, self.num_cls)
+
+    def predict_action(self, h):
+
+        if self.mode != 1:
+            cls = self.fc_act_1(h)
+            cls = self.fc_act_2(cls)
+        else:
+            cls = self.fc_act_2(h)
+
+        return cls
+
+
+class CTR_Multitask_Julius(CTR_Julius):
+    """
+    CTR
+    応答速度 alpha(t) を推定
+    """
+    def __init__(self,
+                 mode=0,
+                 input_size=128,
+                 input_img_size=65,
+                 input_p_size=45,
+                 hidden_size=64,
+                 num_cls=2
+                 ):
+        super().__init__(mode, input_size, input_img_size, input_p_size, hidden_size)
+
+        self.num_cls = num_cls
+
+        if self.mode == 0 or self.mode == 2:
+            self.fc_act_1 = nn.Linear(hidden_size*2, hidden_size)
+            self.fc_act_2 = nn.Linear(hidden_size, self.num_cls)
+        elif self.mode == 1:
+            # self.fc_act_1 = nn.Linear(hidden_size*3, hidden_size)
+            self.fc_act_2 = nn.Linear(hidden_size, self.num_cls)
+        elif self.mode == 3 or self.mode == 5:
+            self.fc_act_1 = nn.Linear(hidden_size*3, hidden_size)
+            self.fc_act_2 = nn.Linear(hidden_size, self.num_cls)
+        elif self.mode == 4:
+            self.fc_act_1 = nn.Linear(hidden_size*4, hidden_size)
+            self.fc_act_2 = nn.Linear(hidden_size, self.num_cls)
+        else:
+            self.fc_act_1 = nn.Linear(hidden_size*5, hidden_size)
+            self.fc_act_2 = nn.Linear(hidden_size, self.num_cls)
+
+    def predict_action(self, h):
+
+        if self.mode != 1:
+            cls = self.fc_act_1(h)
+            cls = self.fc_act_2(cls)
+        else:
+            cls = self.fc_act_2(h)
+
+        return cls

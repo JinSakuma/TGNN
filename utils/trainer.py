@@ -86,7 +86,6 @@ def val(net, mode, dataloaders_dict,
 
         epoch_loss = epoch_loss / train_cnt
         if resume:
-            torch.save(net.state_dict(), os.path.join(output, 'epoch_{}_loss_{:.3f}.pth'.format(epoch+1, epoch_loss)))
             fig = plt.figure(figsize=(20, 8))
             plt.rcParams["font.size"] = 18
             ax1 = fig.add_subplot(2, 1, 1)
@@ -105,9 +104,10 @@ def val(net, mode, dataloaders_dict,
             ax2.plot(y_true[:300], label='true label', linewidth=4.0, color='b')
             ax2.legend()
             plt.savefig(os.path.join(output, 'result_{}_loss_{:.3f}.png'.format(epoch+1, epoch_loss)))
-
-            precision, recall, f1, Distance, LogDistance = quantitative_evaluation(epoch+1, y_true, y_pred, u_true, threshold=threshold, resume=True, output=output)
             plt.close()
+
+            precision, recall, f1, Distance, LogDistance, score = quantitative_evaluation(epoch+1, y_true, y_pred, u_true, threshold=threshold, resume=True, output=output)
+            torch.save(net.state_dict(), os.path.join(output, 'epoch_{}_loss_{:.4f}_score{:.3f}.pth'.format(epoch+1, epoch_loss, score)))
             print('-------------')
 
     return epoch_loss

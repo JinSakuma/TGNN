@@ -25,7 +25,7 @@ class TGNN(nn.Module):
         self.criterion = nn.MSELoss()
         self.max_frame = max_frame
         self.thres1 = 0.8
-        self.thres2 = self.get_threshold(max_frame)  # list型 0~max_frameまでで動的に閾値を持つ
+        self.thres2 = self.get_threshold(max_frame, thres=0.6)  # list型 0~max_frameまでで動的に閾値を持つ
         self.thres_up = 0.5
         self.r = 1.0
 
@@ -52,10 +52,10 @@ class TGNN(nn.Module):
 
         self.hidden_size = hidden_size
 
-    def get_threshold(self, max_frame, thres=0.7):
+    def get_threshold(self, max_frame, thres=0.6):
         """
         thres2を設定する関数
-        uが常に1.0の時,max_frameでちょうどthres1になるalphaを求め,逆算する
+        uが常に1.0の時,max_frameでちょうどthresになるalphaを求め,逆算する
         """
         a = 0
         e = 0.01
@@ -171,11 +171,14 @@ class TGNN(nn.Module):
                 up_max = up_
 
             up_hat = up_max if up_ >= self.thres_up else up_
+#             up_hat = up_
 
             alpha_ = up_hat * a_pre + (1-up_hat) * a_[i]
             y_ = alpha_ * up_hat + (1-alpha_) * y_pre
             if up_hat < self.thres_up:
                 y_ *= 0
+            elif start_frame > 0 and i - start_frame > self.max_frame:
+                y_ = y_pre
 
             if label[i] >= self.thres1:
                 # uの推定値が閾値以下の場合は最適化から外す
@@ -205,10 +208,16 @@ class TGNN(nn.Module):
                 elif y_pre >= self.thres1:
                     if i-start_frame < self.max_frame:
                         l_e = self.criterion(y_pre, label[i-1]*0+self.thres2[i-start_frame])
-                        cnt += 1
-                        loss += l_e
-                        l_c = 0
-                        l_e = 0
+                    else:
+                        l_e = self.criterion(y_pre, label[i-1]*0+self.thres2[self.max_frame-1])
+                        
+#                     l_e = self.criterion(y_pre, label[i-1]*0+0.4)
+                    cnt += 1
+                    loss += l_e
+                    l_c = 0
+                    l_e = 0
+                    
+                start_frame = 0
 
             up_pre = up_hat
             a_pre = alpha_

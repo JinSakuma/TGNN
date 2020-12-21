@@ -3,6 +3,56 @@ import numpy as np
 import math
 
 
+def get_F(Distance, LogDistance, TP, FP, FN):
+    score = []
+    for d in Distance:
+        score.append(abs(d))
+
+    score = np.asarray(sorted(score))
+    X = [i*50 for i in range(60)]
+    F = []
+    R = []
+    P = []
+    for x in X:
+        tp = len(score[score < x])
+        fn = len(score[score > x])
+        precision = tp/(tp+FP)
+        recall = tp/(tp+fn+FN)
+        if precision+recall == 0:
+            f1 = 0
+        else:
+            f1 = precision * recall * 2 / (precision + recall)
+
+        R.append(recall)
+        P.append(precision)
+        F.append(f1)
+
+    score = []
+    X = [i*0.05 for i in range(60)]
+    for d in LogDistance:
+        score.append(abs(d))
+
+    score = np.asarray(sorted(score))
+    F_log = []
+    R_log = []
+    P_log = []
+    for x in X:
+        tp = len(score[score < x])
+        fn = len(score[score > x])
+        precision = tp/(tp+FP)
+        recall = tp/(tp+fn+FN)
+        if precision+recall == 0:
+            f1 = 0
+        else:
+            f1 = precision * recall * 2 / (precision + recall)
+
+        R_log.append(recall)
+        P_log.append(precision)
+        F_log.append(f1)
+
+    return (R, P, F), (R_log, P_log, F_log)
+
+
 def quantitative_evaluation(
                     epoch,
                     y_true,
@@ -20,10 +70,10 @@ def quantitative_evaluation(
     Distance = []
     logDistance = []
     TP, FP, FN = 0, 0, 0
-
+    start_frame = 0
     for i in range(len(u)-1):
         if u[i] == 0 and u[i+1] == 1:
-            G = i  # u が　0->1 になったタイミング
+            start_frame = i  # u が　0->1 になったタイミング
 
         #  発話中 : 評価対象外
         if u[i] == 0:
@@ -51,11 +101,7 @@ def quantitative_evaluation(
             if pred and target:
                 TP += 1
                 Distance.append((pred_frame-target_frame)*frame)
-                """
-                pred_frame - G ........ u　0->1になったタイミングから予測がどれだけ離れてるか
-                target_frame - G ..... u　0->1になったタイミングから正解がどれだけ離れてるか
-                """
-                logDistance.append((np.log((pred_frame-G)*frame+1)-np.log((target_frame-G)*frame+1))**2)
+                logDistance.append(np.log((pred_frame-start_frame)*frame+1)-np.log((target_frame-start_frame)*frame+1))
             elif pred:
                 FP += 1
             elif target:
@@ -79,7 +125,7 @@ def quantitative_evaluation(
 
     log_score = 0
     for d in logDistance:
-        log_score += abs(d)
+        log_score += abs(d**2)
 
     if len(logDistance) > 0:
         log_score = math.sqrt(float(log_score)/len(logDistance))
@@ -96,7 +142,10 @@ def quantitative_evaluation(
             """.format(epoch, precision, recall, f1, score, log_score), file=fo)
         fo.close()
 
-    if eval_flg:
-        return precision, recall, f1, Distance, logDistance, (TP, FP, FN)
+    (R, P, F), (R_log, P_log, F_log) = get_F(Distance, logDistance, TP, FP, FN)
+    f_log_score = (F_log[14]+F_log[22])/2  # 許容誤差0.7,1.1の時のf1の平均 (F0.7+F1.1)/2
 
-    return precision, recall, f1, Distance, logDistance
+    if eval_flg:
+        return precision, recall, f1, Distance, logDistance, (TP, FP, FN), f_log_score
+
+    return precision, recall, f1, Distance, logDistance, f_log_score

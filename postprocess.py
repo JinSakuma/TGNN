@@ -18,7 +18,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input', type=str, default='/mnt/aoni04/jsakuma/data/sota/')
 parser.add_argument('-l', '--lang', type=str, default='ctc', help='ctc or julius')
 #     parser.add_argument('-l', '--lang', type=str, default='julius', help='ctc or julius')
-parser.add_argument('-s', '--seed', type=int, default=0)
+parser.add_argument('-s', '--seed', type=int, default=2)
 parser.add_argument('--target_type', action='store_true',
                     help='if True, target shape is 3(A,B,unknown), False is 1(A/B)')
 parser.add_argument('-o', '--out', type=str, default='./results/')
@@ -35,16 +35,47 @@ os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpuid)
 
 # 追加アノテーション
 METHOD = 'ctc'
-IDX = 0
+IDX = 2
+
+# model_paths = [
+#                 'logs/ctc/v/seed0/0/epoch_18_loss_0.0785_score0.627.pth',
+#                 'logs/ctc/i/seed0/0/epoch_11_loss_0.0790_score0.638.pth',
+#                 'logs/ctc/p/seed0/0/epoch_10_loss_0.0825_score0.590.pth',
+#                 'logs/ctc/vi/seed0/0/epoch_6_loss_0.0779_score0.650.pth',
+#                 'logs/ctc/vp/seed0/0/epoch_2_loss_0.0851_score0.605.pth',
+#                 'logs/ctc/ip/seed0/0/epoch_6_loss_0.0827_score0.640.pth',
+#                 'logs/ctc/vip/seed0/0/epoch_7_loss_0.0863_score0.652.pth'
+# ]
+
+# model_paths = [
+#                 'logs/ctc/v/seed1/0/epoch_4_loss_0.0729_score0.617.pth',
+#                 'logs/ctc/i/seed1/0/epoch_10_loss_0.0803_score0.645.pth',
+#                 'logs/ctc/p/seed1/0/epoch_10_loss_0.0807_score0.582.pth',
+#                 'logs/ctc/vi/seed1/0/epoch_10_loss_0.0744_score0.656.pth',
+#                 'logs/ctc/vp/seed1/0/epoch_2_loss_0.0776_score0.617.pth',
+#                 'logs/ctc/ip/seed1/0/epoch_9_loss_0.0779_score0.637.pth',
+#                 'logs/ctc/vip/seed1/0/epoch_12_loss_0.0731_score0.636.pth'
+# ]
 
 model_paths = [
-                'logs/ctc/vip3/seed0/202012151703/epoch_5_loss_0.083.pth'
+#                 'logs/ctc/v/seed2/0/epoch_15_loss_0.0847_score0.607.pth',
+#                 'logs/ctc/i/seed2/0/epoch_30_loss_0.0731_score0.643.pth',
+#                 'logs/ctc/p/seed2/0/epoch_10_loss_0.0788_score0.585.pth',
+#                 'logs/ctc/vi/seed2/0/epoch_4_loss_0.0630_score0.642.pth',
+                'logs/ctc/vp/seed2/0/epoch_4_loss_0.0653_score0.613.pth',
+                'logs/ctc/ip/seed2/0/epoch_7_loss_0.0677_score0.635.pth',
+                'logs/ctc/vip/seed2/0/epoch_4_loss_0.0630_score0.642.pth'
 ]
 
-modes = [6]
+# model_paths = [
+#     'logs/ctc/1218_u_true/vip/seed0/202012190122/epoch_6_loss_0.0805_score0.668.pth'
+# ] 
+# modes = [6]
 # modes = [0, 1, 2, 3, 4, 5, 6]
-label_list = ['vad_img_phoneme']
-# label_list=['vad', 'img', 'phoneme', 'vad_img', 'vad_phoneme', 'img_phoneme', 'vad_img_phoneme']
+modes = [4, 5, 6]
+# label_list = ['vad_img_phoneme']
+# label_list=['vad', 'phoneme', 'img', 'vad_phoneme', 'img_phoneme']
+label_list=['vad', 'img', 'phoneme', 'vad_img', 'vad_phoneme', 'img_phoneme', 'vad_img_phoneme']
 ELAN_FLAG = True
 DENSE_FLAG = False
 TARGET_TYPE = False
@@ -180,7 +211,7 @@ def get_F(Distance, LogDistance, TP, FP, FN):
     R = []
     P = []
     for x in X:
-        tp = len(score[score < x])
+        tp = len(score[score <= x])
         fn = len(score[score > x])
         precision = tp/(tp+FP)
         recall = tp/(tp+fn+FN)
@@ -203,7 +234,7 @@ def get_F(Distance, LogDistance, TP, FP, FN):
     R_log = []
     P_log = []
     for x in X:
-        tp = len(score[score < x])
+        tp = len(score[score <= x])
         fn = len(score[score > x])
         precision = tp/(tp+FP)
         recall = tp/(tp+fn+FN)
@@ -215,6 +246,9 @@ def get_F(Distance, LogDistance, TP, FP, FN):
         R_log.append(recall)
         P_log.append(precision)
         F_log.append(f1)
+        
+    print("score")
+    print((F_log[14]+F_log[22]) / 2)
 
     return (R, P, F), (R_log, P_log, F_log)
 
