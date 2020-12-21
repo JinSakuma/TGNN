@@ -75,13 +75,10 @@ class TGNN(nn.Module):
                 alpha = a
 
         up = 1
-        a_pre = alpha
         y_pre = 0
         y_list = []
         for i in range(max_frame):
-            a_ = up * a_pre + (1-up) * alpha
-            y = a_ * up + (1-a_) * y_pre
-            a_pre = a_
+            y = alpha * up + (1-alpha) * y_pre
             y_pre = y
             y_list.append(y)
 
