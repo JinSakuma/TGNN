@@ -112,35 +112,13 @@ def preprocess(feat, target_type, phase='train'):
 
             if y[j] > 0 and u[j] == 1:
                 timing_label[point] = min(j - point, 58)
+                action[point] = 1
 
             if u[j] == 1 and u[j+1] == 0:
                 u_interval[point] = min(j + 1 - point, 60)
 
         from collections import Counter
-        # print(Counter(u_interval))
-        # exit()
-        # if phase == 'train':  # sys発話中は u(t) を下げる
-        #     u[action_c == 1] = 0.
-        # else:
-        #     u[action_c == 1] = 1.
-        # 非発話区間全体のアクションラベルを統一する
-        flg = False
-        start = 0
-        end = 0
-        act_tmp = 0
-        for j in range(len(u)-1):
-            if u[j] == 0 and u[j+1] == 1:
-                start = j+1
-                # print(timing_label[j+1])
-                
-            if y[j] > 0:
-                flg = True
-                act_tmp = action[j]
-            if u[j] == 1 and u[j+1] == 0:
-                end = j+1
-                if flg:
-                    action[start:end] = act_tmp
-                    flg = False
+        
 
         # パッケージングに必要なインデックス(非発話区間の開始箇所) ###重要!!
         s = np.asarray([0]+list(u[:-1]-u[1:]))
@@ -168,10 +146,9 @@ def preprocess(feat, target_type, phase='train'):
             batch_list[j]['phonemeB'] = feat['phonemeB'][i][start:last]
             batch_list[j]['y'] = timing_label[last]
             batch_list[j]['u'] = u_interval[last] #非発話区間の長さ
+            batch_list[j]['action'] = action[last] #発話タイプラベル
 
-        a = [batch_list[i]['y'] for i in range(len(batch_list))]
-        print(Counter(a))
-
+        
         pack.append(batch_list)
 
     print('turn taking timing: {}'.format(YC))
