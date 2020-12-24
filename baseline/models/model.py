@@ -24,7 +24,6 @@ class Basemodel(nn.Module):
                  input_img_size=65,
                  input_p_size=128,
                  hidden_size=64,
-                 max_frame=60,
                  ctc=True):
         super(Basemodel, self).__init__()
         """
@@ -33,7 +32,6 @@ class Basemodel(nn.Module):
         self.mode = mode
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.criterion = RMSLELoss()
-        self.max_frame = max_frame
         self.r = 2.0
 
         self.input_size = input_size
@@ -216,3 +214,87 @@ class Basemodel(nn.Module):
             loss = (loss * self.r)
 
         return {'y': y.cpu().data.numpy(), 'loss': loss, 'cnt': cnt}
+
+
+class MultiTaskmodel(Basemodel):
+    def __init__(self,
+                 mode=0,
+                 input_size=128,
+                 input_img_size=65,
+                 input_p_size=128,
+                 hidden_size=64,
+                 ctc=True):
+        super().__init__(mode, input_size, input_img_size, input_p_size, hidden_size, ctc)
+        self.criterion_act = nn.CrossEntropyLoss()
+
+        if self.mode == 0 or self.mode == 2:
+            self.fc2 = nn.Linear(hidden_size*2, 2)
+        elif self.mode == 1:
+            self.fc2 = nn.Linear(hidden_size, 2)
+        elif self.mode == 3 or self.mode == 5:
+            self.fc2 = nn.Linear(hidden_size*3, 2)
+        elif self.mode == 4:
+            self.fc2 = nn.Linear(hidden_size*4, 2)
+        else:
+            self.fc2 = nn.Linear(hidden_size*5, 2)
+
+    def calc_y(self, h):
+        y = torch.clamp(self.fc(h), min=0, max=60)
+        y_act = self.fc2(h)
+        return y, y_act
+
+    def forward(self, batch, phase='train'):
+        
+
+        # 1つの入力の時系列の長さ
+        self.seq_size = batch['voiceA'].shape[0]
+
+        xA = torch.tensor(batch['voiceA']).to(self.device, dtype=torch.float32)
+        xA = xA.unsqueeze(0)
+        xB = torch.tensor(batch['voiceB']).to(self.device, dtype=torch.float32)
+        xB = xB.unsqueeze(0)
+        img = torch.tensor(batch['img']).to(self.device, dtype=torch.float32)
+        img = img.unsqueeze(0)
+        PA = batch['phonemeA']
+        PB = batch['phonemeB']
+        label = torch.tensor(batch['y']).to(self.device, dtype=torch.float32)
+        label_act = torch.tensor(batch['action']).to(self.device, dtype=torch.long)
+        label_act = label_act.view(-1)
+        if self.mode in [0, 3, 4, 6]:
+            hA, hB = self.calc_voice(xA, xB)
+
+        if self.mode in [1, 3, 5, 6]:
+            hImg = self.calc_img(img)
+
+        if self.mode in [2, 4, 5, 6]:
+            hPA, hPB = self.calc_lang(PA, PB)
+
+        loss = 0
+        cnt = 0
+        # 特徴量のconcat
+        if self.mode == 0:
+            h = torch.cat([hA, hB], dim=-1)
+        elif self.mode == 1:
+            h = hImg
+        elif self.mode == 2:
+            h = torch.cat([hPA, hPB], dim=-1)
+        elif self.mode == 3:
+            h = torch.cat([hA, hB, hImg], dim=-1)
+        elif self.mode == 4:
+            h = torch.cat([hA, hB, hPA, hPB], dim=-1)
+        elif self.mode == 5:
+            h = torch.cat([hImg, hPA, hPB], dim=-1)
+        else:
+            h = torch.cat([hA, hB, hImg, hPA, hPB], dim=-1)
+
+        y, y_act = self.calc_y(h[:,-1])
+        loss_timing = self.criterion(y, label)
+        #print(y_act.size(),label_act.size(),y.size(),label.size())
+        loss_act = self.criterion_act(y_act, label_act)
+
+        loss = loss_timing + 0.5 * loss_act
+        if label < 60:             
+            loss = (loss * self.r)
+
+        y_act = nn.functional.softmax(y_act, dim=-1).cpu().data.numpy()[:,1]
+        return {'y': y.cpu().data.numpy(), 'y_act': y_act, 'loss': loss, 'cnt': cnt}

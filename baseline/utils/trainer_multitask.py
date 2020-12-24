@@ -3,7 +3,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
 from utils.eval import quantitative_evaluation
 
 
@@ -11,15 +11,11 @@ def train(net, mode, dataloaders_dict,
           device, optimizer, scheduler
           ):
 
-    #  dataloaders_dict['train'].on_epoch_end()
     net.train()  # モデルを訓練モードに
-#     scheduler.step()
-#     print('lr:{}'.format(scheduler.get_lr()[0]))
 
     epoch_loss = 0.0  # epochの損失和
     train_cnt = 0
-    y_true, y_pred = np.array([]), np.array([])
-
+    
     for batch in tqdm(dataloaders_dict['train']):
         net.reset_state()
         if mode == 2 or mode >= 4:
@@ -28,8 +24,6 @@ def train(net, mode, dataloaders_dict,
         for i in range(len(batch[0])):
             output_dict = net(batch[0][i])
             
-            # y_true = np.append(y_true, 1 - batch[0][i]['y']//60)
-            # y_pred = np.append(y_pred, 1 - output_dict['y']//60)
             loss = output_dict['loss']
             if loss != 0 and loss != -1:
                 optimizer.zero_grad()
@@ -45,8 +39,6 @@ def train(net, mode, dataloaders_dict,
     epoch_loss = epoch_loss / train_cnt
     output_dict = {}
 
-    # print(classification_report(y_true, y_pred))
-
     return epoch_loss
 
 
@@ -56,11 +48,11 @@ def val(net, mode, dataloaders_dict,
         only_eval=False
         ):
 
-    #  dataloaders_dict['val'].on_epoch_end()
     net.eval()  # モデルを訓練モードに
     epoch_loss = 0.0  # epochの損失和
     train_cnt = 0
     y, y_pred = np.array([]), np.array([])
+    y_true_act, y_pred_act = np.array([]), np.array([])
     y_prob, u_list = np.array([]), np.array([])
     with torch.no_grad():
         for batch in tqdm(dataloaders_dict['val']):
@@ -73,6 +65,9 @@ def val(net, mode, dataloaders_dict,
 
                 y = np.append(y, batch[0][i]['y'])
                 y_prob = np.append(y_prob, output_dict['y'])
+
+                y_pred_act = np.append(y_pred_act, output_dict['y_act'])
+                y_true_act = np.append(y_true_act, batch[0][i]['action'])
 
                 u_list = np.append(u_list ,batch[0][i]['u'])
 
@@ -91,6 +86,8 @@ def val(net, mode, dataloaders_dict,
         return {
             'y':y,
             'y_pred':y_prob,
+            'y_act': y_true_act,
+            'y_act_pred': y_pred_act,
             'u': u_list,
             'loss':epoch_loss
                 }
@@ -118,10 +115,14 @@ def val(net, mode, dataloaders_dict,
     print(confusion_matrix(y_true, y_pred))
     print('MAE: {} ms'.format(np.abs(timing_err).mean()))
 
+    y_pred_act = [0 if p < 0.5 else 1 for p in y_pred_act]
+    print('応答義務推定 acc: {}'.format(accuracy_score(y_true_act, y_pred_act)))
+
     fo = open(os.path.join(output, 'eval_report.txt'), 'a')
     print('Epoch {}'.format(epoch+1), file=fo)
     print(classification_report(y_true, y_pred),file=fo)
     print('MAE: {} ms'.format(np.abs(timing_err).mean()), file=fo)
+    print('応答義務推定 acc: {}'.format(accuracy_score(y_true_act, y_pred_act)), file=fo)
     fo.close()
     
     return epoch_loss
