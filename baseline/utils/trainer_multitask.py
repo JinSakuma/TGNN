@@ -12,10 +12,9 @@ def train(net, mode, dataloaders_dict,
           ):
 
     net.train()  # モデルを訓練モードに
-
     epoch_loss = 0.0  # epochの損失和
     train_cnt = 0
-    
+
     for batch in tqdm(dataloaders_dict['train']):
         net.reset_state()
         if mode == 2 or mode >= 4:
@@ -23,7 +22,7 @@ def train(net, mode, dataloaders_dict,
 
         for i in range(len(batch[0])):
             output_dict = net(batch[0][i])
-            
+
             loss = output_dict['loss']
             if loss != 0 and loss != -1:
                 optimizer.zero_grad()
@@ -79,7 +78,6 @@ def val(net, mode, dataloaders_dict,
                 loss = 0
                 train_cnt += 1
 
-
         epoch_loss = epoch_loss / train_cnt
 
     if only_eval:
@@ -94,7 +92,7 @@ def val(net, mode, dataloaders_dict,
 
     torch.save(net.state_dict(), os.path.join(output, 'epoch_{}_loss_{:.3f}.pth'.format(epoch+1, epoch_loss)))
 
-    y_true = [1 if p < 60 else 0 for p in y]    
+    y_true = [1 if p < 60 else 0 for p in y]
     y_pred = np.zeros(len(y_true))
 
     """
@@ -110,7 +108,7 @@ def val(net, mode, dataloaders_dict,
         else:
             if y_prob[j] < u_list[j]:
                 y_pred[j] = 1
-    
+
     print(classification_report(y_true, y_pred))
     print(confusion_matrix(y_true, y_pred))
     print('MAE: {} ms'.format(np.abs(timing_err).mean()))
@@ -124,7 +122,7 @@ def val(net, mode, dataloaders_dict,
     print('MAE: {} ms'.format(np.abs(timing_err).mean()), file=fo)
     print('応答義務推定 acc: {}'.format(accuracy_score(y_true_act, y_pred_act)), file=fo)
     fo.close()
-    
+
     return epoch_loss
 
 
@@ -151,7 +149,7 @@ def trainer(net,
 
             for phase in ['train', 'val']:
                 print(phase)
-                # if phase == 'train' and epoch == 0: continue
+
                 if phase == 'train':
                     epoch_loss = train(net, mode, dataloaders_dict, device, optimizer, scheduler)
                 else:

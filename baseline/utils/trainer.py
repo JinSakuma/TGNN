@@ -10,11 +10,7 @@ from utils.eval import quantitative_evaluation
 def train(net, mode, dataloaders_dict,
           device, optimizer, scheduler
           ):
-
-    #  dataloaders_dict['train'].on_epoch_end()
     net.train()  # モデルを訓練モードに
-#     scheduler.step()
-#     print('lr:{}'.format(scheduler.get_lr()[0]))
 
     epoch_loss = 0.0  # epochの損失和
     train_cnt = 0
@@ -27,11 +23,9 @@ def train(net, mode, dataloaders_dict,
 
         for i in range(len(batch[0])):
             output_dict = net(batch[0][i])
-            
-            # y_true = np.append(y_true, 1 - batch[0][i]['y']//60)
-            # y_pred = np.append(y_pred, 1 - output_dict['y']//60)
+
             loss = output_dict['loss']
-            if loss != 0 and loss != -1:
+            if loss != 0:
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -45,8 +39,6 @@ def train(net, mode, dataloaders_dict,
     epoch_loss = epoch_loss / train_cnt
     output_dict = {}
 
-    # print(classification_report(y_true, y_pred))
-
     return epoch_loss
 
 
@@ -56,7 +48,6 @@ def val(net, mode, dataloaders_dict,
         only_eval=False
         ):
 
-    #  dataloaders_dict['val'].on_epoch_end()
     net.eval()  # モデルを訓練モードに
     epoch_loss = 0.0  # epochの損失和
     train_cnt = 0
@@ -66,7 +57,7 @@ def val(net, mode, dataloaders_dict,
         for batch in tqdm(dataloaders_dict['val']):
             net.reset_state()
             if mode == 2 or mode >= 4:
-                    net.reset_phoneme()
+                net.reset_phoneme()
 
             for i in range(len(batch[0])):
                 output_dict = net(batch[0][i], phase='val')
@@ -84,7 +75,6 @@ def val(net, mode, dataloaders_dict,
                 loss = 0
                 train_cnt += 1
 
-
         epoch_loss = epoch_loss / train_cnt
 
     if only_eval:
@@ -97,7 +87,7 @@ def val(net, mode, dataloaders_dict,
 
     torch.save(net.state_dict(), os.path.join(output, 'epoch_{}_loss_{:.3f}.pth'.format(epoch+1, epoch_loss)))
 
-    y_true = [1 if p < 60 else 0 for p in y]    
+    y_true = [1 if p < 60 else 0 for p in y]
     y_pred = np.zeros(len(y_true))
 
     """
@@ -113,7 +103,7 @@ def val(net, mode, dataloaders_dict,
         else:
             if y_prob[j] < u_list[j]:
                 y_pred[j] = 1
-    
+
     print(classification_report(y_true, y_pred))
     print(confusion_matrix(y_true, y_pred))
     print('MAE: {} ms'.format(np.abs(timing_err).mean()))
@@ -123,7 +113,7 @@ def val(net, mode, dataloaders_dict,
     print(classification_report(y_true, y_pred),file=fo)
     print('MAE: {} ms'.format(np.abs(timing_err).mean()), file=fo)
     fo.close()
-    
+
     return epoch_loss
 
 
@@ -150,7 +140,7 @@ def trainer(net,
 
             for phase in ['train', 'val']:
                 print(phase)
-                # if phase == 'train' and epoch == 0: continue
+
                 if phase == 'train':
                     epoch_loss = train(net, mode, dataloaders_dict, device, optimizer, scheduler)
                 else:
