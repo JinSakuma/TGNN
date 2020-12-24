@@ -52,6 +52,7 @@ def preprocess(feat, target_type, phase='train'):
     pack = []
 
     OC, YC = 0, 0
+    timing_dist = []
     threshold = 1.0
     for i in range(len(feat['feature'])):
         u = (1 - feat['feature'][i]['utter_A'].values) * (1 - feat['feature'][i]['utter_B'].values)  # 非発話度真値 AもBもOFFなら u=1
@@ -81,8 +82,8 @@ def preprocess(feat, target_type, phase='train'):
         over_flg = False
         start_i = 0
         act_tmp = 0
-        timing_label = np.ones(len(y)) * 60.0
-        u_interval = np.ones(len(y)) * 60.0
+        timing_label = np.ones(len(y)) * 60. # timingの教師ラベルを格納
+        u_interval = np.ones(len(y)) * 60.0 # 非発話区間の長さを格納
         point = 0
         for j in range(len(y)-1):
             if y[j] > 0 and u[j] == 0:
@@ -91,12 +92,12 @@ def preprocess(feat, target_type, phase='train'):
                 act_tmp = action[j]
                 OC += 1
                 start_i = j
-                over_flag = True
+                over_flg = True
 
             if u[j] == 0 and u[j+1] == 1:
                 if over_flg:
                     if abs(j-start_i) > 40:
-                        over_flag = False
+                        over_flg = False
                         action_c[start_i:j+1] = 0
                     else:
                         y[j+2] = threshold
@@ -105,20 +106,18 @@ def preprocess(feat, target_type, phase='train'):
                         u[j+2] = 1
                         action_c[start_i:j+1] = 0
                         action[start_i:j+1] = 0
-#                         action_c[j+3:j+3+(j-start_i)] = 1
                         over_flg = False
-                
                 point = j + 1
 
             if y[j] > 0 and u[j] == 1:
                 timing_label[point] = min(j - point, 58)
+
                 action[point] = 1
 
             if u[j] == 1 and u[j+1] == 0:
                 u_interval[point] = min(j + 1 - point, 60)
 
         from collections import Counter
-        
 
         # パッケージングに必要なインデックス(非発話区間の開始箇所) ###重要!!
         s = np.asarray([0]+list(u[:-1]-u[1:]))
@@ -128,7 +127,7 @@ def preprocess(feat, target_type, phase='train'):
             idxs = idxs[1:]
         # 正解タイミング
         target_idxs = np.where(y > 0)[0]
-        
+
         # 発話区間の個数分の空リストを生成
         batch_list = [{'voiceA': [], 'voiceB': [], 'img': [], 'phonemeA': [], 'phonemeB': [], 'u_pred': [], 'u': [], 'y': [], 'action': []} for _ in range(len(idxs)//2)]
         # print(len(batch_list))
@@ -147,12 +146,13 @@ def preprocess(feat, target_type, phase='train'):
             batch_list[j]['y'] = timing_label[last]
             batch_list[j]['u'] = u_interval[last] #非発話区間の長さ
             batch_list[j]['action'] = action[last] #発話タイプラベル
+            timing_dist.append(timing_label[last])
 
-        
         pack.append(batch_list)
 
     print('turn taking timing: {}'.format(YC))
     print('overlap: {}'.format(OC))
+    print('timing dist:', Counter(timing_dist))
 
     return pack
 
