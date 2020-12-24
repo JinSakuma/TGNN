@@ -32,7 +32,7 @@ class Basemodel(nn.Module):
         self.mode = mode
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.criterion = RMSLELoss()
-        self.r = 2.0
+        self.r = 1.0
 
         self.input_size = input_size
         self.input_img_size = input_img_size
@@ -210,7 +210,7 @@ class Basemodel(nn.Module):
 
         y = self.calc_y(h[:,-1])
         loss = self.criterion(y, label)
-        if label < 60:             
+        if label < 60:
             loss = (loss * self.r)
 
         return {'y': y.cpu().data.numpy(), 'loss': loss, 'cnt': cnt}
@@ -244,8 +244,6 @@ class MultiTaskmodel(Basemodel):
         return y, y_act
 
     def forward(self, batch, phase='train'):
-        
-
         # 1つの入力の時系列の長さ
         self.seq_size = batch['voiceA'].shape[0]
 
@@ -297,4 +295,4 @@ class MultiTaskmodel(Basemodel):
             loss = (loss * self.r)
 
         y_act = nn.functional.softmax(y_act, dim=-1).cpu().data.numpy()[:,1]
-        return {'y': y.cpu().data.numpy(), 'y_act': y_act, 'loss': loss, 'cnt': cnt}
+        return {'y': y.cpu().data.numpy(), 'y_act': y_act, 'loss': loss}
