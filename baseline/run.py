@@ -4,8 +4,6 @@ import os
 import torch
 import torch.optim as optim
 import argparse
-from utils.trainer import trainer
-from models.model import Basemodel
 
 
 def main():
@@ -21,6 +19,7 @@ def main():
     parser.add_argument('-e', '--epoch', type=int, default=30)
     parser.add_argument('-r', '--resume', type=str, default=True)
     parser.add_argument('--hang', type=str, default=False)
+    parser.add_argument('--mt', type=str, default=False)
     parser.add_argument('--gpuid', type=int, default=0)
     
     args = parser.parse_args()
@@ -62,7 +61,19 @@ def main():
     print('data loading ...')
     dataloaders_dict = get_dataloader(args.input, DENSE_FLAG, ELAN_FLAG, TARGET_TYPE)
 
-    net = Basemodel(mode=args.mode,
+    if args.mt:
+        from utils.trainer_multitask import trainer
+        from models.model import MultiTaskmodel
+        net = MultiTaskmodel(mode=args.mode,
+               input_size=input_size,
+               input_img_size=input_img_size,
+               input_p_size=input_p_size,
+               hidden_size=hidden_size,
+               ctc=ctc_flg)
+    else:
+        from utils.trainer import trainer
+        from models.model import Basemodel
+        net = Basemodel(mode=args.mode,
                input_size=input_size,
                input_img_size=input_img_size,
                input_p_size=input_p_size,
