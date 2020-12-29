@@ -19,7 +19,8 @@ def main():
     parser.add_argument('-e', '--epoch', type=int, default=30)
     parser.add_argument('-r', '--resume', type=str, default=True)
     parser.add_argument('--hang', type=str, default=False)
-    parser.add_argument('--mt', type=str, default=False)
+    parser.add_argument('-t', '--task', type=bool, default=False,
+                        help='true: multitask, false: singletask')
     parser.add_argument('--gpuid', type=int, default=0)
     
     args = parser.parse_args()
@@ -61,7 +62,7 @@ def main():
     print('data loading ...')
     dataloaders_dict = get_dataloader(args.input, DENSE_FLAG, ELAN_FLAG, TARGET_TYPE)
 
-    if args.mt:
+    if args.task:
         from utils.trainer_multitask import trainer
         from models.model import MultiTaskmodel
         net = MultiTaskmodel(mode=args.mode,

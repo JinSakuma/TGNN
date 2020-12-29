@@ -56,6 +56,7 @@ def preprocess(feat, target_type, phase='train'):
     threshold = 1.0
     for i in range(len(feat['feature'])):
         u = (1 - feat['feature'][i]['utter_A'].values) * (1 - feat['feature'][i]['utter_B'].values)  # 非発話度真値 AもBもOFFなら u=1
+        # if phase=='train':
         u = add_hang_over(u)
         # system の顔向き情報の入れ方
         # 画像特徴量も使う際に使用
@@ -75,7 +76,7 @@ def preprocess(feat, target_type, phase='train'):
         y[0] = 0.  # start は予測不可
         u[0] = 0
         action[0] = 0
-        u[action_c==1] = 1.
+        #u[action_c==1] = 1.
         y = np.asarray(y)
         action = np.asarray(action)
         YC += len(y[y > 0])
@@ -112,7 +113,10 @@ def preprocess(feat, target_type, phase='train'):
             if y[j] > 0 and u[j] == 1:
                 timing_label[point] = min(j - point, 58)
 
-                action[point] = 1
+                if action[j] > 0:
+                    action[point] = 1
+                else:
+                    action[point] = 0
 
             if u[j] == 1 and u[j+1] == 0:
                 u_interval[point] = min(j + 1 - point, 60)

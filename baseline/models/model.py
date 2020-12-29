@@ -7,14 +7,14 @@ import numpy as np
 class RMSLELoss(nn.Module):
     """
     Loss function :対数平均2乗誤差を定義
-    2020/05/13 : +1e-05 を追加 (lossが0になると微分不可になるため)
+    2020/05/13 : +1e-05 を追加 (lossが0になると微分不可になる?ため)
     """
     def __init__(self):
         super().__init__()
         self.mse = nn.MSELoss()
-        
+
     def forward(self, pred, actual):
-        return torch.sqrt(self.mse(torch.log(pred + 1), torch.log(actual + 1))+1e-05)
+        return torch.sqrt(self.mse(torch.log(pred + 1), torch.log(actual + 1)) + 1e-05)
 
 
 class Basemodel(nn.Module):
@@ -31,14 +31,14 @@ class Basemodel(nn.Module):
         """
         self.mode = mode
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.criterion = RMSLELoss()
-        self.r = 1.0
+        self.criterion = RMSLELoss() # 対数二乗誤差
+        # self.criterion = nn.L1Loss() # 絶対誤差
+        self.r = 2.0 # 学習時のクラスweight
 
         self.input_size = input_size
         self.input_img_size = input_img_size
         self.input_p_size = input_p_size
 
-        
         self.hidden_size = hidden_size
 
         # 音響LSTM
@@ -163,24 +163,21 @@ class Basemodel(nn.Module):
         self.prev_hpa = torch.zeros(1, 64).to(self.device)
         self.prev_hpb = torch.zeros(1, 64).to(self.device)
 
-        
-
-
-    def forward(self, batch, phase='train'):
+    def encode(self, batch, phase='train'):
         # 1つの入力の時系列の長さ
         self.seq_size = batch['voiceA'].shape[0]
 
-        xA = torch.tensor(batch['voiceA']).to(self.device, dtype=torch.float32)
+        xA = torch.FloatTensor(batch['voiceA']).to(self.device)
         xA = xA.unsqueeze(0)
-        xB = torch.tensor(batch['voiceB']).to(self.device, dtype=torch.float32)
+        xB = torch.FloatTensor(batch['voiceB']).to(self.device)
         xB = xB.unsqueeze(0)
-        img = torch.tensor(batch['img']).to(self.device, dtype=torch.float32)
+        img = torch.FloatTensor(batch['img']).to(self.device)
         img = img.unsqueeze(0)
         PA = batch['phonemeA']
         PB = batch['phonemeB']
-        label = torch.tensor(batch['y']).to(self.device, dtype=torch.float32)
-
-
+        label = torch.tensor(batch['y']).to(self.device)
+        label_act = torch.tensor(batch['action']).to(self.device, dtype=torch.long)
+        label_act = label_act.view(-1)
         if self.mode in [0, 3, 4, 6]:
             hA, hB = self.calc_voice(xA, xB)
 
@@ -190,8 +187,6 @@ class Basemodel(nn.Module):
         if self.mode in [2, 4, 5, 6]:
             hPA, hPB = self.calc_lang(PA, PB)
 
-        loss = 0
-        cnt = 0
         # 特徴量のconcat
         if self.mode == 0:
             h = torch.cat([hA, hB], dim=-1)
@@ -208,6 +203,13 @@ class Basemodel(nn.Module):
         else:
             h = torch.cat([hA, hB, hImg, hPA, hPB], dim=-1)
 
+        return h
+
+    def forward(self, batch, phase='train'):
+        label = torch.tensor(batch['y']).to(self.device)
+        loss, cnt = 0, 0
+
+        h = self.encode(batch, phase)
         y = self.calc_y(h[:,-1])
         loss = self.criterion(y, label)
         if label < 60:
@@ -224,6 +226,10 @@ class MultiTaskmodel(Basemodel):
                  input_p_size=128,
                  hidden_size=64,
                  ctc=True):
+        """
+        Basemodel を継承
+        出力が y(タイミング), y_act(応答義務クラス) の 2パターンに増加
+        """
         super().__init__(mode, input_size, input_img_size, input_p_size, hidden_size, ctc)
         self.criterion_act = nn.CrossEntropyLoss()
 
@@ -244,54 +250,20 @@ class MultiTaskmodel(Basemodel):
         return y, y_act
 
     def forward(self, batch, phase='train'):
-        # 1つの入力の時系列の長さ
-        self.seq_size = batch['voiceA'].shape[0]
-
-        xA = torch.tensor(batch['voiceA']).to(self.device, dtype=torch.float32)
-        xA = xA.unsqueeze(0)
-        xB = torch.tensor(batch['voiceB']).to(self.device, dtype=torch.float32)
-        xB = xB.unsqueeze(0)
-        img = torch.tensor(batch['img']).to(self.device, dtype=torch.float32)
-        img = img.unsqueeze(0)
-        PA = batch['phonemeA']
-        PB = batch['phonemeB']
-        label = torch.tensor(batch['y']).to(self.device, dtype=torch.float32)
-        label_act = torch.tensor(batch['action']).to(self.device, dtype=torch.long)
-        label_act = label_act.view(-1)
-        if self.mode in [0, 3, 4, 6]:
-            hA, hB = self.calc_voice(xA, xB)
-
-        if self.mode in [1, 3, 5, 6]:
-            hImg = self.calc_img(img)
-
-        if self.mode in [2, 4, 5, 6]:
-            hPA, hPB = self.calc_lang(PA, PB)
-
         loss = 0
         cnt = 0
-        # 特徴量のconcat
-        if self.mode == 0:
-            h = torch.cat([hA, hB], dim=-1)
-        elif self.mode == 1:
-            h = hImg
-        elif self.mode == 2:
-            h = torch.cat([hPA, hPB], dim=-1)
-        elif self.mode == 3:
-            h = torch.cat([hA, hB, hImg], dim=-1)
-        elif self.mode == 4:
-            h = torch.cat([hA, hB, hPA, hPB], dim=-1)
-        elif self.mode == 5:
-            h = torch.cat([hImg, hPA, hPB], dim=-1)
-        else:
-            h = torch.cat([hA, hB, hImg, hPA, hPB], dim=-1)
+        label_act = torch.tensor(batch['action']).to(self.device)
+        label_act = label_act.view(-1)
+        label = torch.tensor(batch['y']).to(self.device)
+
+        h = self.encode(batch, phase)
 
         y, y_act = self.calc_y(h[:,-1])
         loss_timing = self.criterion(y, label)
-        #print(y_act.size(),label_act.size(),y.size(),label.size())
         loss_act = self.criterion_act(y_act, label_act)
 
         loss = loss_timing + 0.5 * loss_act
-        if label < 60:             
+        if label < 60:
             loss = (loss * self.r)
 
         y_act = nn.functional.softmax(y_act, dim=-1).cpu().data.numpy()[:,1]
