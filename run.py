@@ -18,7 +18,7 @@ def main():
     parser.add_argument('-s', '--seed', type=int, default=0)
     parser.add_argument('--target_type', action='store_true',
                         help='if True, target shape is 3(A,B,unknown), False is 1(A/B)')
-    parser.add_argument('-o', '--out', type=str, default='./logs/ctc/0105/vip/seed0')
+    parser.add_argument('-o', '--out', type=str, default='./logs/ctc/0105/vip0.6/seed0')
     parser.add_argument('-e', '--epoch', type=int, default=30)
     parser.add_argument('-r', '--resume', type=str, default=True)
     parser.add_argument('--hang', type=str, default=False)
