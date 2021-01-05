@@ -90,12 +90,12 @@ def preprocess(feat, target_type, phase='train'):
                 act_tmp = action[j]
                 OC += 1
                 start_i = j
-                over_flag = True
+                over_flg = True
 
             if u[j] == 0 and u[j+1] == 1:
                 if over_flg:
                     if abs(j-start_i) > 40:
-                        over_flag = False
+                        over_flg = False
                         action_c[start_i:j+1] = 0
                     else:
                         y[j+2] = threshold

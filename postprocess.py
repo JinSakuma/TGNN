@@ -18,7 +18,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input', type=str, default='/mnt/aoni04/jsakuma/data/sota/')
 parser.add_argument('-l', '--lang', type=str, default='ctc', help='ctc or julius')
 #     parser.add_argument('-l', '--lang', type=str, default='julius', help='ctc or julius')
-parser.add_argument('-s', '--seed', type=int, default=2)
+parser.add_argument('-t', '--task', type=bool, default=False,
+                    help='true: multitask, false: singletask')
+parser.add_argument('-s', '--seed', type=int, default=0)
 parser.add_argument('--target_type', action='store_true',
                     help='if True, target shape is 3(A,B,unknown), False is 1(A/B)')
 parser.add_argument('-o', '--out', type=str, default='./results/')
@@ -35,47 +37,58 @@ os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpuid)
 
 # 追加アノテーション
 METHOD = 'ctc'
-IDX = 2
+# METHOD = 'multitask_ctc'
+IDX = 105
 
 # model_paths = [
-#                 'logs/ctc/v/seed0/0/epoch_18_loss_0.0785_score0.627.pth',
-#                 'logs/ctc/i/seed0/0/epoch_11_loss_0.0790_score0.638.pth',
-#                 'logs/ctc/p/seed0/0/epoch_10_loss_0.0825_score0.590.pth',
-#                 'logs/ctc/vi/seed0/0/epoch_6_loss_0.0779_score0.650.pth',
-#                 'logs/ctc/vp/seed0/0/epoch_2_loss_0.0851_score0.605.pth',
-#                 'logs/ctc/ip/seed0/0/epoch_6_loss_0.0827_score0.640.pth',
-#                 'logs/ctc/vip/seed0/0/epoch_7_loss_0.0863_score0.652.pth'
+#                 'logs/ctc/1225/v/seed0/0/epoch_23_loss_0.0957_score0.588.pth',
+#                 'logs/ctc/1225/i/seed0/0/epoch_29_loss_0.0938_score0.619.pth',
+#                 'logs/ctc/1225/p/seed0/0/epoch_4_loss_0.0950_score0.560.pth',
+#                 'logs/ctc/1225/vi/seed0/0/epoch_17_loss_0.1089_score0.575.pth',
+#                 'logs/ctc/1225/vp/seed0/0/epoch_11_loss_0.1016_score0.567.pth',
+#                 'logs/ctc/1225/ip/seed0/0/epoch_5_loss_0.1092_score0.546.pth',
+#                 'logs/ctc/1225/vip/seed0/0/epoch_9_loss_0.1012_score0.595.pth'
 # ]
 
 # model_paths = [
-#                 'logs/ctc/v/seed1/0/epoch_4_loss_0.0729_score0.617.pth',
-#                 'logs/ctc/i/seed1/0/epoch_10_loss_0.0803_score0.645.pth',
-#                 'logs/ctc/p/seed1/0/epoch_10_loss_0.0807_score0.582.pth',
-#                 'logs/ctc/vi/seed1/0/epoch_10_loss_0.0744_score0.656.pth',
-#                 'logs/ctc/vp/seed1/0/epoch_2_loss_0.0776_score0.617.pth',
-#                 'logs/ctc/ip/seed1/0/epoch_9_loss_0.0779_score0.637.pth',
-#                 'logs/ctc/vip/seed1/0/epoch_12_loss_0.0731_score0.636.pth'
+#                 'logs/ctc/1225/v/seed1/0/epoch_12_loss_0.0837_score0.606.pth',
+#                 'logs/ctc/1225/i/seed1/0/epoch_5_loss_0.0920_score0.611.pth',
+#                 'logs/ctc/1225/p/seed1/0/epoch_5_loss_0.0929_score0.567.pth',
+#                 'logs/ctc/1225/vi/seed1/0/epoch_7_loss_0.0847_score0.632.pth',
+#                 'logs/ctc/1225/vp/seed1/0/epoch_5_loss_0.0920_score0.562.pth',
+#                 'logs/ctc/1225/ip/seed1/0/epoch_6_loss_0.0905_score0.608.pth',
+#                 'logs/ctc/1225/vip/seed1/0/epoch_6_loss_0.0865_score0.627.pth'
 # ]
 
-model_paths = [
-#                 'logs/ctc/v/seed2/0/epoch_15_loss_0.0847_score0.607.pth',
-#                 'logs/ctc/i/seed2/0/epoch_30_loss_0.0731_score0.643.pth',
-#                 'logs/ctc/p/seed2/0/epoch_10_loss_0.0788_score0.585.pth',
-#                 'logs/ctc/vi/seed2/0/epoch_4_loss_0.0630_score0.642.pth',
-                'logs/ctc/vp/seed2/0/epoch_4_loss_0.0653_score0.613.pth',
-                'logs/ctc/ip/seed2/0/epoch_7_loss_0.0677_score0.635.pth',
-                'logs/ctc/vip/seed2/0/epoch_4_loss_0.0630_score0.642.pth'
-]
+# model_paths = [
+#                 'logs/ctc/1225/v/seed2/0/epoch_4_loss_0.0758_score0.591.pth',
+#                 'logs/ctc/1225/i/seed2/0/epoch_22_loss_0.0769_score0.621.pth',
+#                 'logs/ctc/1225/p/seed2/0/epoch_8_loss_0.0935_score0.561.pth',
+#                 'logs/ctc/1225/vi/seed2/0/epoch_10_loss_0.0758_score0.570.pth',
+#                 'logs/ctc/1225/vp/seed2/0/epoch_4_loss_0.0801_score0.597.pth',
+#                 'logs/ctc/1225/ip/seed2/0/epoch_1_loss_0.0777_score0.604.pth',
+#                 'logs/ctc/1225/vip/seed2/0/epoch_6_loss_0.0759_score0.615.pth'
+# ]
+
+model_paths = ['logs/ctc/0105/vip/seed0/202101051114/epoch_5_loss_0.1371_score0.593.pth'] 
+# model_paths = [
+#                 'logs/ctc/1225/vip/seed0/0/epoch_12_loss_0.1102_score0.615.pth',
+#                 'logs/ctc/1225/vip/seed1/0/epoch_6_loss_0.0865_score0.627.pth',
+#                 'logs/ctc/1225/vip/seed2/0/epoch_3_loss_0.0806_score0.644.pth',
+# ]
 
 # model_paths = [
-#     'logs/ctc/1218_u_true/vip/seed0/202012190122/epoch_6_loss_0.0805_score0.668.pth'
-# ] 
-# modes = [6]
+#                 'logs/multitask/ctc/1225/vip/seed0/0/epoch_25_loss_0.9225_score0.621.pth',
+#                 'logs/multitask/ctc/1225/vip/seed1/0/epoch_3_loss_0.3733_score0.658.pth',
+#                 'logs/multitask/ctc/1225/vip/seed2/0/epoch_3_loss_0.5999_score0.638.pth',
+# ]
+
+modes = [6]
 # modes = [0, 1, 2, 3, 4, 5, 6]
-modes = [4, 5, 6]
-# label_list = ['vad_img_phoneme']
-# label_list=['vad', 'phoneme', 'img', 'vad_phoneme', 'img_phoneme']
-label_list=['vad', 'img', 'phoneme', 'vad_img', 'vad_phoneme', 'img_phoneme', 'vad_img_phoneme']
+# modes = [3, 4, 5, 6]
+label_list = ['vad_img_phoneme']
+# label_list=['vad_img', 'vad_phoneme', 'img_phoneme', 'vad_img_phoneme']
+# label_list=['vad', 'img', 'phoneme', 'vad_img', 'vad_phoneme', 'img_phoneme', 'vad_img_phoneme']
 ELAN_FLAG = True
 DENSE_FLAG = False
 TARGET_TYPE = False
@@ -86,6 +99,11 @@ os.makedirs(out_dir, exist_ok=True)
 seed = args.seed
 np.random.seed(seed)
 torch.manual_seed(seed)
+                    
+if args.task:
+    from models.model_multitask import TGNN
+else:
+    from models.model import TGNN
 
 # モデル設定
 input_size = 128
@@ -206,7 +224,7 @@ def get_F(Distance, LogDistance, TP, FP, FN):
         score.append(abs(d))
 
     score = np.asarray(sorted(score))
-    X = [i*50 for i in range(60)]
+    X = [i*50 for i in range(61)]
     F = []
     R = []
     P = []
@@ -225,7 +243,7 @@ def get_F(Distance, LogDistance, TP, FP, FN):
         F.append(f1)
 
     score = []
-    X = [i*0.05 for i in range(60)]
+    X = [i*0.05 for i in range(61)]
     for d in LogDistance:
         score.append(abs(d))
 
@@ -287,8 +305,7 @@ def eval_model(model_path, mode):
     epoch_loss = 0.0  # epochの損失和
     train_cnt = 0
     threshold = 0.8
-    a_pred = np.array([])
-    u_true, u_pred, u_pred_hat = np.array([]), np.array([]), np.array([])
+    u_true = np.array([])
     y_true, y_pred = np.array([]), np.array([])
 
     with torch.no_grad():
@@ -301,10 +318,7 @@ def eval_model(model_path, mode):
             for i in range(len(batch[0])):
                 output_dict = net(batch[0][i], out[-1], a[-1], phase='val')
 
-                a_pred = np.append(a_pred, output_dict['alpha'])
                 u_true = np.append(u_true, batch[0][i]['u'])
-                u_pred = np.append(u_pred, output_dict['u_pred'])
-                u_pred_hat = np.append(u_pred_hat, output_dict['u_pred_hat'])
                 y_true = np.append(y_true, batch[0][i]['y'])
                 y_pred = np.append(y_pred, output_dict['y'])
 
@@ -312,12 +326,6 @@ def eval_model(model_path, mode):
                 if loss != 0 and loss != -1:
                     net.back_trancut()
                     loss = loss.item()
-
-                epoch_loss += loss
-                loss = 0
-                train_cnt += output_dict['cnt']
-
-        epoch_loss = epoch_loss / train_cnt
 
     precision, recall, f1, Distance, LogDistance, (TP, FP, FN) = quantitative_evaluation(y_true, y_pred, u_true, threshold=threshold, resume=False, output='.', eval_flg=True)
 
