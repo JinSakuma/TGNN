@@ -70,7 +70,7 @@ IDX = 105
 #                 'logs/ctc/1225/vip/seed2/0/epoch_6_loss_0.0759_score0.615.pth'
 # ]
 
-model_paths = ['logs/ctc/0105/vip/seed0/202101051114/epoch_5_loss_0.1371_score0.593.pth'] 
+model_paths = ['logs/ctc/0105/vip0.4/seed0/202101051327/epoch_6_loss_0.1576_score0.430.pth'] 
 # model_paths = [
 #                 'logs/ctc/1225/vip/seed0/0/epoch_12_loss_0.1102_score0.615.pth',
 #                 'logs/ctc/1225/vip/seed1/0/epoch_6_loss_0.0865_score0.627.pth',

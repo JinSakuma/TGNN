@@ -25,7 +25,7 @@ class TGNN(nn.Module):
         self.criterion = nn.MSELoss()
         self.max_frame = max_frame
         self.thres1 = 0.8
-        self.thres2 = self.get_threshold(max_frame, thres=0.6)  # list型 0~max_frameまでで動的に閾値を持つ
+        self.thres2 = self.get_threshold(max_frame, thres=0.4)  # list型 0~max_frameまでで動的に閾値を持つ
         self.thres_up = 0.5
         self.r = 1.0
 
