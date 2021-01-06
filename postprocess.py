@@ -27,7 +27,7 @@ parser.add_argument('-o', '--out', type=str, default='./results/')
 parser.add_argument('-e', '--epoch', type=int, default=30)
 parser.add_argument('-r', '--resume', type=str, default=True)
 parser.add_argument('--hang', type=str, default=False)
-parser.add_argument('--gpuid', type=int, default=0)
+parser.add_argument('--gpuid', type=int, default=2)
 parser.add_argument('--weight', type=str,
                     default='/mnt/aoni04/katayama/share/SPEC/epoch_20_acc0.887_loss0.266_ut_train.pth')
 
@@ -36,7 +36,7 @@ args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpuid)
 
 # 追加アノテーション
-METHOD = 'ctc'
+METHOD = '0105'
 # METHOD = 'multitask_ctc'
 IDX = 105
 
@@ -70,7 +70,16 @@ IDX = 105
 #                 'logs/ctc/1225/vip/seed2/0/epoch_6_loss_0.0759_score0.615.pth'
 # ]
 
-model_paths = ['logs/ctc/0105/vip0.4/seed0/202101051327/epoch_6_loss_0.1576_score0.430.pth'] 
+model_paths = ['logs/ctc/0105/vip0.4/seed0/202101051327/epoch_18_loss_0.1365_score0.574.pth',
+#               'logs/ctc/0105/vip0.4/seed1/202101051618/epoch_3_loss_0.1342_score0.585.pth',
+#               'logs/ctc/0105/vip0.4/seed2/202101051619/epoch_4_loss_0.1409_score0.567.pth'
+              ] 
+
+# model_paths = ['logs/multitask/ctc/0105/vip0.4/seed0/202101051727/epoch_13_loss_0.5718_score0.580.pth',
+#               'logs/multitask/ctc/0105/vip0.4/seed1/202101051727/epoch_2_loss_0.4098_score0.602.pth',
+#               'logs/multitask/ctc/0105/vip0.4/seed2/202101051727/epoch_5_loss_0.4685_score0.569.pth'
+#               ] 
+
 # model_paths = [
 #                 'logs/ctc/1225/vip/seed0/0/epoch_12_loss_0.1102_score0.615.pth',
 #                 'logs/ctc/1225/vip/seed1/0/epoch_6_loss_0.0865_score0.627.pth',
@@ -86,7 +95,7 @@ model_paths = ['logs/ctc/0105/vip0.4/seed0/202101051327/epoch_6_loss_0.1576_scor
 modes = [6]
 # modes = [0, 1, 2, 3, 4, 5, 6]
 # modes = [3, 4, 5, 6]
-label_list = ['vad_img_phoneme']
+label_list = ['0']
 # label_list=['vad_img', 'vad_phoneme', 'img_phoneme', 'vad_img_phoneme']
 # label_list=['vad', 'img', 'phoneme', 'vad_img', 'vad_phoneme', 'img_phoneme', 'vad_img_phoneme']
 ELAN_FLAG = True
