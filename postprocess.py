@@ -17,8 +17,8 @@ mode is 0(vad) or 1(img) or 2(phoneme) or 3(vad & img)
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input', type=str, default='/mnt/aoni04/jsakuma/data/sota/')
 parser.add_argument('-l', '--lang', type=str, default='ctc', help='ctc or julius')
-#     parser.add_argument('-l', '--lang', type=str, default='julius', help='ctc or julius')
-parser.add_argument('-t', '--task', type=bool, default=False,
+# parser.add_argument('-l', '--lang', type=str, default='julius', help='ctc or julius')
+parser.add_argument('-t', '--task', type=bool, default=True,
                     help='true: multitask, false: singletask')
 parser.add_argument('-s', '--seed', type=int, default=0)
 parser.add_argument('--target_type', action='store_true',
@@ -27,7 +27,7 @@ parser.add_argument('-o', '--out', type=str, default='./results/')
 parser.add_argument('-e', '--epoch', type=int, default=30)
 parser.add_argument('-r', '--resume', type=str, default=True)
 parser.add_argument('--hang', type=str, default=False)
-parser.add_argument('--gpuid', type=int, default=2)
+parser.add_argument('--gpuid', type=int, default=0)
 parser.add_argument('--weight', type=str,
                     default='/mnt/aoni04/katayama/share/SPEC/epoch_20_acc0.887_loss0.266_ut_train.pth')
 
@@ -36,67 +36,22 @@ args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpuid)
 
 # 追加アノテーション
-METHOD = '0105'
-# METHOD = 'multitask_ctc'
-IDX = 105
+# METHOD = 'julius_'
+METHOD = 'multitask_ctc_'
+IDX = 0
 
-# model_paths = [
-#                 'logs/ctc/1225/v/seed0/0/epoch_23_loss_0.0957_score0.588.pth',
-#                 'logs/ctc/1225/i/seed0/0/epoch_29_loss_0.0938_score0.619.pth',
-#                 'logs/ctc/1225/p/seed0/0/epoch_4_loss_0.0950_score0.560.pth',
-#                 'logs/ctc/1225/vi/seed0/0/epoch_17_loss_0.1089_score0.575.pth',
-#                 'logs/ctc/1225/vp/seed0/0/epoch_11_loss_0.1016_score0.567.pth',
-#                 'logs/ctc/1225/ip/seed0/0/epoch_5_loss_0.1092_score0.546.pth',
-#                 'logs/ctc/1225/vip/seed0/0/epoch_9_loss_0.1012_score0.595.pth'
-# ]
+model_paths = [
+              'logs/multitask/ctc/0107/vip0.4/seed0/0/epoch_25_loss_0.7107_score42.148.pth',
+              'logs/multitask/ctc/0107/vip0.4/seed1/0/epoch_3_loss_0.4659_score43.246.pth',
+              'logs/multitask/ctc/0107/vip0.4/seed2/0/epoch_17_loss_0.7305_score42.954.pth'
+              ]
 
-# model_paths = [
-#                 'logs/ctc/1225/v/seed1/0/epoch_12_loss_0.0837_score0.606.pth',
-#                 'logs/ctc/1225/i/seed1/0/epoch_5_loss_0.0920_score0.611.pth',
-#                 'logs/ctc/1225/p/seed1/0/epoch_5_loss_0.0929_score0.567.pth',
-#                 'logs/ctc/1225/vi/seed1/0/epoch_7_loss_0.0847_score0.632.pth',
-#                 'logs/ctc/1225/vp/seed1/0/epoch_5_loss_0.0920_score0.562.pth',
-#                 'logs/ctc/1225/ip/seed1/0/epoch_6_loss_0.0905_score0.608.pth',
-#                 'logs/ctc/1225/vip/seed1/0/epoch_6_loss_0.0865_score0.627.pth'
-# ]
-
-# model_paths = [
-#                 'logs/ctc/1225/v/seed2/0/epoch_4_loss_0.0758_score0.591.pth',
-#                 'logs/ctc/1225/i/seed2/0/epoch_22_loss_0.0769_score0.621.pth',
-#                 'logs/ctc/1225/p/seed2/0/epoch_8_loss_0.0935_score0.561.pth',
-#                 'logs/ctc/1225/vi/seed2/0/epoch_10_loss_0.0758_score0.570.pth',
-#                 'logs/ctc/1225/vp/seed2/0/epoch_4_loss_0.0801_score0.597.pth',
-#                 'logs/ctc/1225/ip/seed2/0/epoch_1_loss_0.0777_score0.604.pth',
-#                 'logs/ctc/1225/vip/seed2/0/epoch_6_loss_0.0759_score0.615.pth'
-# ]
-
-model_paths = ['logs/ctc/0105/vip0.4/seed0/202101051327/epoch_18_loss_0.1365_score0.574.pth',
-#               'logs/ctc/0105/vip0.4/seed1/202101051618/epoch_3_loss_0.1342_score0.585.pth',
-#               'logs/ctc/0105/vip0.4/seed2/202101051619/epoch_4_loss_0.1409_score0.567.pth'
-              ] 
-
-# model_paths = ['logs/multitask/ctc/0105/vip0.4/seed0/202101051727/epoch_13_loss_0.5718_score0.580.pth',
-#               'logs/multitask/ctc/0105/vip0.4/seed1/202101051727/epoch_2_loss_0.4098_score0.602.pth',
-#               'logs/multitask/ctc/0105/vip0.4/seed2/202101051727/epoch_5_loss_0.4685_score0.569.pth'
-#               ] 
-
-# model_paths = [
-#                 'logs/ctc/1225/vip/seed0/0/epoch_12_loss_0.1102_score0.615.pth',
-#                 'logs/ctc/1225/vip/seed1/0/epoch_6_loss_0.0865_score0.627.pth',
-#                 'logs/ctc/1225/vip/seed2/0/epoch_3_loss_0.0806_score0.644.pth',
-# ]
-
-# model_paths = [
-#                 'logs/multitask/ctc/1225/vip/seed0/0/epoch_25_loss_0.9225_score0.621.pth',
-#                 'logs/multitask/ctc/1225/vip/seed1/0/epoch_3_loss_0.3733_score0.658.pth',
-#                 'logs/multitask/ctc/1225/vip/seed2/0/epoch_3_loss_0.5999_score0.638.pth',
-# ]
-
-modes = [6]
+modes = [6, 6, 6]
 # modes = [0, 1, 2, 3, 4, 5, 6]
-# modes = [3, 4, 5, 6]
-label_list = ['0']
-# label_list=['vad_img', 'vad_phoneme', 'img_phoneme', 'vad_img_phoneme']
+# modes = [2, 4, 5, 6]
+label_list = ['0', '1', '2']
+# label_list=['phoneme', 'vad_phoneme', 'img_phoneme', 'vad_img_phoneme']
+# label_list=['vad', 'img', 'phoneme', 'vad_img', 'vad_phoneme', 'img_phoneme', 'vad_img_phoneme']
 # label_list=['vad', 'img', 'phoneme', 'vad_img', 'vad_phoneme', 'img_phoneme', 'vad_img_phoneme']
 ELAN_FLAG = True
 DENSE_FLAG = False

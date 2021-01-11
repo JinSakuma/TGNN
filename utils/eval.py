@@ -143,7 +143,7 @@ def quantitative_evaluation(
         fo.close()
 
     (R, P, F), (R_log, P_log, F_log) = get_F(Distance, logDistance, TP, FP, FN)
-    f_log_score = F[10]  # 許容誤差0.7,1.1の時のf1の平均 (F0.7+F1.1)/2
+    f_log_score = np.asarray(F).sum()  # 許容誤差0.7,1.1の時のf1の平均 (F0.7+F1.1)/2
 
     if eval_flg:
         return precision, recall, f1, Distance, logDistance, (TP, FP, FN), f_log_score

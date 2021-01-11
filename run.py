@@ -15,10 +15,10 @@ def main():
                         help='0 _ VAD, 1 _ 画像, 2 _ 言語, 3 _ VAD+画像, 4 _ VAD+言語, 5 _ 画像+言語, 6 _ VAD+画像+言語')
     parser.add_argument('-t', '--task', type=bool, default=True,
                         help='true: multitask, false: singletask')
-    parser.add_argument('-s', '--seed', type=int, default=0)
+    parser.add_argument('-s', '--seed', type=int, default=2)
     parser.add_argument('--target_type', action='store_true',
                         help='if True, target shape is 3(A,B,unknown), False is 1(A/B)')
-    parser.add_argument('-o', '--out', type=str, default='./logs/multitask/ctc/0105/vip0.4/seed0')
+    parser.add_argument('-o', '--out', type=str, default='./logs/multitask/ctc/0107/vip0.4/seed2')
     parser.add_argument('-e', '--epoch', type=int, default=30)
     parser.add_argument('-r', '--resume', type=str, default=True)
     parser.add_argument('--hang', type=str, default=False)
