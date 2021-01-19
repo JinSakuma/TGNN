@@ -17,8 +17,10 @@ mode is 0(vad) or 1(img) or 2(phoneme) or 3(vad & img)
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input', type=str, default='/mnt/aoni04/jsakuma/data/sota/')
 parser.add_argument('-l', '--lang', type=str, default='ctc', help='ctc or julius')
-#     parser.add_argument('-l', '--lang', type=str, default='julius', help='ctc or julius')
-parser.add_argument('-s', '--seed', type=int, default=2)
+# parser.add_argument('-l', '--lang', type=str, default='julius', help='ctc or julius')
+parser.add_argument('-t', '--task', type=bool, default=False,
+                    help='true: multitask, false: singletask')
+parser.add_argument('-s', '--seed', type=int, default=0)
 parser.add_argument('--target_type', action='store_true',
                     help='if True, target shape is 3(A,B,unknown), False is 1(A/B)')
 parser.add_argument('-o', '--out', type=str, default='./results/')
@@ -34,48 +36,30 @@ args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpuid)
 
 # 追加アノテーション
-METHOD = 'ctc'
-IDX = 2
-
-# model_paths = [
-#                 'logs/ctc/v/seed0/0/epoch_18_loss_0.0785_score0.627.pth',
-#                 'logs/ctc/i/seed0/0/epoch_11_loss_0.0790_score0.638.pth',
-#                 'logs/ctc/p/seed0/0/epoch_10_loss_0.0825_score0.590.pth',
-#                 'logs/ctc/vi/seed0/0/epoch_6_loss_0.0779_score0.650.pth',
-#                 'logs/ctc/vp/seed0/0/epoch_2_loss_0.0851_score0.605.pth',
-#                 'logs/ctc/ip/seed0/0/epoch_6_loss_0.0827_score0.640.pth',
-#                 'logs/ctc/vip/seed0/0/epoch_7_loss_0.0863_score0.652.pth'
-# ]
-
-# model_paths = [
-#                 'logs/ctc/v/seed1/0/epoch_4_loss_0.0729_score0.617.pth',
-#                 'logs/ctc/i/seed1/0/epoch_10_loss_0.0803_score0.645.pth',
-#                 'logs/ctc/p/seed1/0/epoch_10_loss_0.0807_score0.582.pth',
-#                 'logs/ctc/vi/seed1/0/epoch_10_loss_0.0744_score0.656.pth',
-#                 'logs/ctc/vp/seed1/0/epoch_2_loss_0.0776_score0.617.pth',
-#                 'logs/ctc/ip/seed1/0/epoch_9_loss_0.0779_score0.637.pth',
-#                 'logs/ctc/vip/seed1/0/epoch_12_loss_0.0731_score0.636.pth'
-# ]
+METHOD = 'ctc_elan_false2'
+# METHOD = 'multitask_ctc_'
+IDX = 0
 
 model_paths = [
-#                 'logs/ctc/v/seed2/0/epoch_15_loss_0.0847_score0.607.pth',
-#                 'logs/ctc/i/seed2/0/epoch_30_loss_0.0731_score0.643.pth',
-#                 'logs/ctc/p/seed2/0/epoch_10_loss_0.0788_score0.585.pth',
-#                 'logs/ctc/vi/seed2/0/epoch_4_loss_0.0630_score0.642.pth',
-                'logs/ctc/vp/seed2/0/epoch_4_loss_0.0653_score0.613.pth',
-                'logs/ctc/ip/seed2/0/epoch_7_loss_0.0677_score0.635.pth',
-                'logs/ctc/vip/seed2/0/epoch_4_loss_0.0630_score0.642.pth'
-]
+              'logs/ctc/0112_not_add/vip0.4/seed0/0/epoch_10_loss_0.1471_score42.950.pth',
+              'logs/ctc/0112_not_add/vip0.4/seed1/0/epoch_2_loss_0.1323_score43.737.pth',
+              'logs/ctc/0112_not_add/vip0.4/seed2/0/epoch_2_loss_0.1408_score43.995.pth'
+              ]
+
 
 # model_paths = [
-#     'logs/ctc/1218_u_true/vip/seed0/202012190122/epoch_6_loss_0.0805_score0.668.pth'
-# ] 
-# modes = [6]
+#               'logs/multitask/ctc/0107/vip0.4/seed0/0/epoch_25_loss_0.7107_score42.148.pth',
+#               'logs/multitask/ctc/0107/vip0.4/seed1/0/epoch_3_loss_0.4659_score43.246.pth',
+#               'logs/multitask/ctc/0107/vip0.4/seed2/0/epoch_17_loss_0.7305_score42.954.pth'
+#               ]
+
+modes = [6, 6, 6]
 # modes = [0, 1, 2, 3, 4, 5, 6]
-modes = [4, 5, 6]
-# label_list = ['vad_img_phoneme']
-# label_list=['vad', 'phoneme', 'img', 'vad_phoneme', 'img_phoneme']
-label_list=['vad', 'img', 'phoneme', 'vad_img', 'vad_phoneme', 'img_phoneme', 'vad_img_phoneme']
+# modes = [2, 4, 5, 6]
+label_list = ['0', '1', '2']
+# label_list=['phoneme', 'vad_phoneme', 'img_phoneme', 'vad_img_phoneme']
+# label_list=['vad', 'img', 'phoneme', 'vad_img', 'vad_phoneme', 'img_phoneme', 'vad_img_phoneme']
+# label_list=['vad', 'img', 'phoneme', 'vad_img', 'vad_phoneme', 'img_phoneme', 'vad_img_phoneme']
 ELAN_FLAG = True
 DENSE_FLAG = False
 TARGET_TYPE = False
@@ -86,6 +70,11 @@ os.makedirs(out_dir, exist_ok=True)
 seed = args.seed
 np.random.seed(seed)
 torch.manual_seed(seed)
+                    
+if args.task:
+    from models.model_multitask import TGNN
+else:
+    from models.model import TGNN
 
 # モデル設定
 input_size = 128
@@ -206,7 +195,7 @@ def get_F(Distance, LogDistance, TP, FP, FN):
         score.append(abs(d))
 
     score = np.asarray(sorted(score))
-    X = [i*50 for i in range(60)]
+    X = [i*50 for i in range(61)]
     F = []
     R = []
     P = []
@@ -225,7 +214,7 @@ def get_F(Distance, LogDistance, TP, FP, FN):
         F.append(f1)
 
     score = []
-    X = [i*0.05 for i in range(60)]
+    X = [i*0.05 for i in range(61)]
     for d in LogDistance:
         score.append(abs(d))
 
@@ -287,8 +276,7 @@ def eval_model(model_path, mode):
     epoch_loss = 0.0  # epochの損失和
     train_cnt = 0
     threshold = 0.8
-    a_pred = np.array([])
-    u_true, u_pred, u_pred_hat = np.array([]), np.array([]), np.array([])
+    u_true = np.array([])
     y_true, y_pred = np.array([]), np.array([])
 
     with torch.no_grad():
@@ -301,10 +289,7 @@ def eval_model(model_path, mode):
             for i in range(len(batch[0])):
                 output_dict = net(batch[0][i], out[-1], a[-1], phase='val')
 
-                a_pred = np.append(a_pred, output_dict['alpha'])
                 u_true = np.append(u_true, batch[0][i]['u'])
-                u_pred = np.append(u_pred, output_dict['u_pred'])
-                u_pred_hat = np.append(u_pred_hat, output_dict['u_pred_hat'])
                 y_true = np.append(y_true, batch[0][i]['y'])
                 y_pred = np.append(y_pred, output_dict['y'])
 
@@ -312,12 +297,6 @@ def eval_model(model_path, mode):
                 if loss != 0 and loss != -1:
                     net.back_trancut()
                     loss = loss.item()
-
-                epoch_loss += loss
-                loss = 0
-                train_cnt += output_dict['cnt']
-
-        epoch_loss = epoch_loss / train_cnt
 
     precision, recall, f1, Distance, LogDistance, (TP, FP, FN) = quantitative_evaluation(y_true, y_pred, u_true, threshold=threshold, resume=False, output='.', eval_flg=True)
 
