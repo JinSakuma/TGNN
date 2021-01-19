@@ -18,7 +18,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input', type=str, default='/mnt/aoni04/jsakuma/data/sota/')
 parser.add_argument('-l', '--lang', type=str, default='ctc', help='ctc or julius')
 # parser.add_argument('-l', '--lang', type=str, default='julius', help='ctc or julius')
-parser.add_argument('-t', '--task', type=bool, default=True,
+parser.add_argument('-t', '--task', type=bool, default=False,
                     help='true: multitask, false: singletask')
 parser.add_argument('-s', '--seed', type=int, default=0)
 parser.add_argument('--target_type', action='store_true',
@@ -36,15 +36,22 @@ args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpuid)
 
 # 追加アノテーション
-# METHOD = 'julius_'
-METHOD = 'multitask_ctc_'
+METHOD = 'ctc_elan_false2'
+# METHOD = 'multitask_ctc_'
 IDX = 0
 
 model_paths = [
-              'logs/multitask/ctc/0107/vip0.4/seed0/0/epoch_25_loss_0.7107_score42.148.pth',
-              'logs/multitask/ctc/0107/vip0.4/seed1/0/epoch_3_loss_0.4659_score43.246.pth',
-              'logs/multitask/ctc/0107/vip0.4/seed2/0/epoch_17_loss_0.7305_score42.954.pth'
+              'logs/ctc/0112_not_add/vip0.4/seed0/0/epoch_10_loss_0.1471_score42.950.pth',
+              'logs/ctc/0112_not_add/vip0.4/seed1/0/epoch_2_loss_0.1323_score43.737.pth',
+              'logs/ctc/0112_not_add/vip0.4/seed2/0/epoch_2_loss_0.1408_score43.995.pth'
               ]
+
+
+# model_paths = [
+#               'logs/multitask/ctc/0107/vip0.4/seed0/0/epoch_25_loss_0.7107_score42.148.pth',
+#               'logs/multitask/ctc/0107/vip0.4/seed1/0/epoch_3_loss_0.4659_score43.246.pth',
+#               'logs/multitask/ctc/0107/vip0.4/seed2/0/epoch_17_loss_0.7305_score42.954.pth'
+#               ]
 
 modes = [6, 6, 6]
 # modes = [0, 1, 2, 3, 4, 5, 6]

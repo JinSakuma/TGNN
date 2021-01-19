@@ -32,7 +32,7 @@ def main():
 
     os.makedirs(args.out, exist_ok=True)
     DENSE_FLAG = False
-    ELAN_FLAG = False
+    ELAN_FLAG = True
     TARGET_TYPE = False
 
     seed = args.seed
